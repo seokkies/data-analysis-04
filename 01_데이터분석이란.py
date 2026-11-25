@@ -183,15 +183,13 @@ for i in range(len(header)):
 # ============================================
 
 # 온도 확인
-import numpy as np
-
 print("=" * 60)
 print("[5] 온도 44개 전부")
 print(temps)
 top = max(temps)
 low = min(temps)
 span = top - low
-avg = np.mean(temps)
+avg = sum(temps) / len(temps)
 print()
 print(" [5-1] 세 숫자로 44개 요약")
 print("합계:", round(sum(temps), 1), " / 개수:", len(temps))
@@ -270,3 +268,79 @@ for k in (2, 3):
             f"{row[1]} {row[0]} 온도 {row[2]:>6} "
             f"평균과 차이 {round(float(row[2]) -avg, 2):>6} 상태= {row[5]}"
         )
+
+# 데이터가 이상하면 현장에 물어봐라 - 다양한 환경변수와 상황과 인적 요소가 작용하기 때문에
+
+# ============================================
+# 8. 데이터의 상관관계
+# ============================================
+pairs = sorted(((float(row[2]), float(row[3])) for row in rows), reverse=True)
+hot = pairs[:5]
+cold = pairs[-5:]
+print("=" * 60)
+print("[8] 온도가 높을 때와 낮을 때의 OP값")
+print("온도 상위 5줄:", hot)
+print("그 때 OP값 평균:", round(sum(p[1] for p in hot) / 5), 2)
+print("온도 하위 5줄:", cold)
+print("그 때 OP값 평균:", round(sum(p[1] for p in cold) / 5), 2)
+
+# ============================================
+# 9. 데이터를 순환하며 값 찾기
+# ============================================
+
+cols = {"온도": 2, "OP값": 3, "CP값": 4}
+print("=" * 60)
+print("[9] 배치 3개 x 3열을 표로 나타내기")
+print(f"{'배치':<5}{'열':<6}{'개수':<5}{'평균':<10}{'최대':<10}{'최소':<10}")
+for lot in ("로트A", "로트B", "로트C"):
+    for name, idx in cols.items():
+        vals = []
+        for row in rows:
+            if row[1] == lot and row[idx] != "":
+                vals.append(float(row[idx]))
+        print(
+            f"{lot:<5}{name:<6}{len(vals):>5}{round(sum(vals)/len(vals), 2):>10}"
+            f"{max(vals):>10}{min(vals):>10}"
+        )
+
+# 파일 체크
+with open(WIDE, encoding="utf-8-sig") as f:
+    wide = next(csv.reader(f))
+print()
+print(" [9-1] 미리보는 파일 열 수:", len(wide))
+print("열 이름:", wide[:5], "... 끝 2개", wide[-2:])
+
+# ============================================
+# 10. 결측치 처리
+# ============================================
+
+with open(PROC, encoding="utf-8-sig") as f:
+    r = csv.reader(f)
+    dirty_header = next(r)
+    dirty = list(r)
+
+print("=" * 60)
+print("[10] 빈 칸이 섞인 파일")
+print("행 수:", len(dirty), "/ 열 수:", len(dirty_header))
+print("열 이름:", dirty_header)
+
+for i in range(len(dirty_header)):
+    blank = 0
+    for row in dirty:
+        if row[i] == "":
+            blank += 1
+    if blank > 0:
+        print(f"빈 칸 {blank:>2}개 - {dirty_header[i]}")
+
+print()
+print(" [10-1] 결측처리 없는 평균")
+try:
+    op = [float(row[4]) for row in dirty]
+    print("평균", sum(op) / len(op))
+except ValueError as e:
+    print("ValueError:", e)
+
+"""
+데이터 분석 순서
+수집 -> 전처리 -> EDA -> 모델랑 -> 평가 -> 적용
+"""
