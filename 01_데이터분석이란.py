@@ -177,3 +177,96 @@ roles = {
 for i in range(len(header)):
     kinds = set(row[i] for row in rows)
     print(f"{header[i]:<6} 종류 {len(kinds):>3}가지 {roles[header[i]]}")
+
+# ============================================
+# 5. 데이터 눈으로 확인하기
+# ============================================
+
+# 온도 확인
+import numpy as np
+
+print("=" * 60)
+print("[5] 온도 44개 전부")
+print(temps)
+top = max(temps)
+low = min(temps)
+span = top - low
+avg = np.mean(temps)
+print()
+print(" [5-1] 세 숫자로 44개 요약")
+print("합계:", round(sum(temps), 1), " / 개수:", len(temps))
+print("평균:", avg)
+print("평균(둘째 자리까지):", round(avg, 2))
+print("최대:", top, "최소:", low, "범위:", span)
+
+gaps = [abs(t - avg) for t in temps]
+spread = sum(gaps) / len(gaps)
+
+print()
+print(" [5-2] 흩어진 정도")
+print(" 평균에서 떨어진 거리 중 가장 먼 것:", round(max(gaps), 2))
+print(" 평균에서 떨어진 거리의 평균:", round(spread, 2))
+
+# ============================================
+# 6. 배치별 비교
+# ============================================
+
+
+def stat(values):
+    """
+    숫자 리스트를 받아 개수, 평균, 최대, 최소, 범위, 흔들림을 딕셔너리로 반환하는 함수
+    """
+    cnt = len(values)
+    mean = sum(values) / len(values)
+    maxi = max(values)
+    mini = min(values)
+    boundary = maxi - mini
+    mad = sum(abs(v - mean) for v in values) / len(values)
+
+    return {
+        "개수": cnt,
+        "평균": mean,
+        "최대": maxi,
+        "최소": mini,
+        "범위": boundary,
+        "흔들림": mad,
+    }
+
+
+print("=" * 60)
+print("[6] 배치별 온도 확인")
+lots = ("로트A", "로트B", "로트C")
+for lot in lots:
+    picked = []
+    for row in rows:
+        if row[1] == lot:
+            picked.append(row)
+
+    lot_temps = []
+    for row in picked:
+        lot_temps.append(float(row[2]))
+
+    s = stat(lot_temps)
+    print(lot, s)
+print("전체", stat(temps))
+print()
+print(" [6-2] 숫자 열의 흔들림 정도")
+for name, idx in (("온도", 2), ("OP값", 3), ("CP값", 4)):
+    print(name, "흔들림", stat([float(row[idx]) for row in rows])["흔들림"])
+
+
+# ============================================
+# 7. 라벨없이 이상치 탑지
+# ============================================
+
+print("=" * 60)
+print("[7] 라벨을 보지 않고 찾아낸 수상한 줄")
+for k in (2, 3):
+    far = [row for row in rows if abs(float(row[2]) - avg) > k * spread]
+    print(f"흔들림 {k}배 초과: {len(far)}건")
+
+    for row in far:
+        print(
+            f"{row[1]} {row[0]} 온도 {row[2]:>6} "
+            f"평균과 차이 {round(float(row[2]) -avg, 2):>6} 상태= {row[5]}"
+        )
